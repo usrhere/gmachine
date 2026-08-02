@@ -9,6 +9,7 @@ const (
 	OpNOOP         = 1
 	OpINCA         = 2
 	OpDECA         = 3
+	OpSETA         = 4
 )
 
 type Machine struct {
@@ -19,17 +20,25 @@ type Machine struct {
 
 func (m *Machine) Run() {
 instructions:
-	for _, v := range m.Memory {
-		m.P++
-		switch v {
+	for i := 0; i < len(m.Memory); i++ {
+		switch m.Memory[i] {
 		case 0:
 			break instructions
 		case 2:
 			m.A++
 		case 3:
 			m.A--
+		case 4:
+			i++
+			m.A = m.Memory[i]
 		}
 	}
+	m.P = Word(len(m.Memory))
+}
+
+func (m *Machine) RunProgram(program []Word) {
+	m.Memory = program
+	m.Run()
 }
 
 func New() Machine {

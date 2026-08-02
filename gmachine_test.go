@@ -26,7 +26,7 @@ func TestNew(t *testing.T) {
 
 func TestHALT(t *testing.T) {
 	g := gmachine.New()
-	g.Run()
+	g.RunProgram([]gmachine.Word{gmachine.OpHALT})
 	if g.P != 1 {
 		t.Errorf("want P == 1, got %d", g.P)
 	}
@@ -34,9 +34,10 @@ func TestHALT(t *testing.T) {
 
 func TestNOOP(t *testing.T) {
 	g := gmachine.New()
-	g.Memory[0] = gmachine.OpNOOP
-	g.Memory = append(g.Memory, gmachine.OpHALT)
-	g.Run()
+	g.RunProgram([]gmachine.Word{
+		gmachine.OpNOOP,
+		gmachine.OpHALT,
+	})
 	if g.P != 2 {
 		t.Errorf("want P == 2, got %d", g.P)
 	}
@@ -44,8 +45,7 @@ func TestNOOP(t *testing.T) {
 
 func TestINCA(t *testing.T) {
 	g := gmachine.New()
-	g.Memory[0] = gmachine.OpINCA
-	g.Run()
+	g.RunProgram([]gmachine.Word{gmachine.OpINCA})
 	if g.A != 1 {
 		t.Errorf("want A == 1, got %d", g.A)
 	}
@@ -54,20 +54,64 @@ func TestINCA(t *testing.T) {
 func TestDECA(t *testing.T) {
 	g := gmachine.New()
 	g.A = 2
-	g.Memory[0] = gmachine.OpDECA
-	g.Run()
+	g.RunProgram([]gmachine.Word{gmachine.OpDECA})
 	if g.A != 1 {
 		t.Errorf("want A == 1, got %d", g.A)
 	}
 }
 
 func TestSubtraction(t *testing.T) {
+	var operand, wantA gmachine.Word
+	operand = 3
+	wantA = 1
 	g := gmachine.New()
-	g.A = 3
-	g.Memory[0] = gmachine.OpDECA
-	g.Memory = append(g.Memory, gmachine.OpDECA)
-	g.Run()
-	if g.A != 1 {
-		t.Errorf("want A == 1, got %d", g.A)
+	g.RunProgram([]gmachine.Word{
+		gmachine.OpSETA,
+		operand,
+		gmachine.OpDECA,
+		gmachine.OpDECA,
+	})
+	if g.A != wantA {
+		t.Errorf("want A == %d, got %d", wantA, g.A)
 	}
+	operand = 4
+	wantA = 2
+	g.P = 0
+	g.RunProgram([]gmachine.Word{
+		gmachine.OpSETA,
+		operand,
+		gmachine.OpDECA,
+		gmachine.OpDECA,
+	})
+	if g.A != wantA {
+		t.Errorf("want A == %d, got %d", wantA, g.A)
+	}
+	operand = 100
+	wantA = 98
+	g.P = 0
+	g.RunProgram([]gmachine.Word{
+		gmachine.OpSETA,
+		operand,
+		gmachine.OpDECA,
+		gmachine.OpDECA,
+	})
+	if g.A != wantA {
+		t.Errorf("want A == %d, got %d", wantA, g.A)
+	}
+}
+
+func TestSETA(t *testing.T) {
+	var operand gmachine.Word = 99
+	g := gmachine.New()
+	g.RunProgram([]gmachine.Word{
+		gmachine.OpSETA,
+		operand,
+	})
+	if g.P != 2 {
+		t.Errorf("want P == 2, got %d", g.P)
+	}
+	if g.A != operand {
+		t.Errorf("want A == %d, got %d", operand, g.A)
+	}
+
 }

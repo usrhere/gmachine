@@ -1,6 +1,7 @@
 package gmachine_test
 
 import (
+	"os"
 	"testing"
 
 	"gmachine"
@@ -128,5 +129,18 @@ func TestB(t *testing.T) {
 	})
 	if g.B != 100 {
 		t.Errorf("want B == %d, got %d", 100, g.B)
+	}
+}
+
+func TestReadInstructionsFromFile(t *testing.T) {
+	g := gmachine.New()
+	f, err := os.ReadFile("test/f1.bin")
+	if err != nil {
+		t.Error("Error reading file")
+	}
+	g.RunProgram(f)
+	wantA := 81
+	if g.A != byte(wantA) {
+		t.Errorf("want A == %d, got %d", wantA, g.A)
 	}
 }

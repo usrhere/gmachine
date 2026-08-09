@@ -15,7 +15,8 @@ const (
 
 type Machine struct {
 	PC     byte // Program counter
-	A      byte // Accumulator
+	A      byte // Accumulator A
+	B      byte // Accumulator B
 	Memory []byte
 }
 
@@ -32,6 +33,13 @@ instructions:
 		case OpLDA:
 			i++
 			m.A = m.Memory[i]
+		case OpINCB:
+			m.B++
+		case OpDECB:
+			m.B--
+		case OpLDB:
+			i++
+			m.B = m.Memory[i]
 		}
 	}
 	m.PC = byte(len(m.Memory))

@@ -14,49 +14,60 @@ const (
 )
 
 type Machine struct {
-	PC     byte // Program counter
-	A      byte // Accumulator A
-	B      byte // Accumulator B
-	Memory []byte
+	PC     uint16 // Program counter
+	A      byte   // Accumulator A
+	B      byte   // Accumulator B
+	Memory [65536]byte
+}
+
+func (m *Machine) LoadToMemory(program []byte) {
+	copy(m.Memory[:], program)
+}
+
+func (m *Machine) Step() bool {
+	switch m.Memory[m.PC] {
+	case OpHALT:
+		m.PC++
+		return true
+	case OpINCA:
+		m.A++
+	case OpDECA:
+		m.A--
+	case OpLDA:
+		m.A = m.Memory[m.PC+1]
+		m.PC++
+	case OpINCB:
+		m.B++
+	case OpDECB:
+		m.B--
+	case OpLDB:
+		m.B = m.Memory[m.PC+1]
+		m.PC++
+	}
+	m.PC++
+	return false
 }
 
 func (m *Machine) Run() {
-instructions:
-	for i := 0; i < len(m.Memory); i++ {
-		switch m.Memory[i] {
-		case OpHALT:
-			break instructions
-		case OpINCA:
-			m.A++
-		case OpDECA:
-			m.A--
-		case OpLDA:
-			i++
-			m.A = m.Memory[i]
-		case OpINCB:
-			m.B++
-		case OpDECB:
-			m.B--
-		case OpLDB:
-			i++
-			m.B = m.Memory[i]
+	for {
+		halt := m.Step()
+		if halt {
+			break
 		}
 	}
-	m.PC = byte(len(m.Memory))
 }
 
 func (m *Machine) RunProgram(program []byte) {
-	m.Memory = program
+	m.LoadToMemory(program)
 	m.Run()
 }
 
 func New() Machine {
 	m := Machine{
-		PC:     0,
-		Memory: []byte{0},
+		PC: 0,
 	}
 	return m
 }
 
-// TODO: write some code that reads a binary file and executes it
-// E.g: 0x11 99 => converted to binary
+// TODO: read binary file and execute it step by step
+// print out the values of the registries, user should press enter after each and then execute next instruction

@@ -1,6 +1,14 @@
 // Package gmachine implements a simple virtual CPU, known as the G-machine.
 package gmachine
 
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
+
 const (
 	DefaultMemSize = 1
 	OpHALT         = 0
@@ -14,10 +22,12 @@ const (
 )
 
 type Machine struct {
-	PC     uint16 // Program counter
-	A      byte   // Accumulator A
-	B      byte   // Accumulator B
-	Memory [65536]byte
+	PC          uint16 // Program counter
+	A           byte   // Accumulator A
+	B           byte   // Accumulator B
+	Memory      [65536]byte
+	Debug       bool
+	Interactive bool
 }
 
 func (m *Machine) LoadToMemory(program []byte) {
@@ -48,11 +58,41 @@ func (m *Machine) Step() bool {
 	return false
 }
 
-func (m *Machine) Run() {
+func (m *Machine) debug() {
 	for {
-		halt := m.Step()
-		if halt {
-			break
+		fmt.Printf("A: %-3d (0x%-3x) | B: %-3d (0x%-3x) | PC: %-3d", m.A, m.A, m.B, m.B, m.PC)
+		m.Step()
+		reader := bufio.NewReader(os.Stdin)
+		reader.ReadString('\n')
+	}
+}
+
+func (m *Machine) Run() {
+	if m.Debug {
+		m.debug()
+	} else if m.Interactive {
+		var input []byte
+		fmt.Printf("Enter Op codes in hex: ")
+		scanner := bufio.NewScanner(os.Stdin)
+		if scanner.Scan() {
+			fields := strings.Fields(scanner.Text())
+			for _, field := range fields {
+				b, err := strconv.ParseUint(field, 0, 8)
+				if err != nil {
+					panic(err)
+				}
+				fmt.Printf("%d (%s)\n", b, field)
+				input = append(input, byte(b))
+			}
+		}
+		m.LoadToMemory(input)
+		m.debug()
+	} else {
+		for {
+			halt := m.Step()
+			if halt {
+				break
+			}
 		}
 	}
 }

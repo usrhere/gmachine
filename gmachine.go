@@ -30,6 +30,49 @@ type Machine struct {
 	Interactive bool
 }
 
+func instructionLength(opcode byte) int {
+	if opcode == OpLDA || opcode == OpLDB {
+		return 2
+	}
+	return 1
+}
+
+func translateInstructionToString(opcode []byte) (string, []byte) {
+	var instruction string
+	switch opcode[0] {
+	case OpHALT:
+		instruction = "halt"
+	case OpINCA:
+		instruction = "inc a"
+	case OpDECA:
+		instruction = "dec a"
+	case OpLDA:
+		instruction = "ld a"
+	case OpINCB:
+		instruction = "inc b"
+	case OpDECB:
+		instruction = "dec b"
+	case OpLDB:
+	}
+	instructionLength := instructionLength(opcode[0])
+	if instructionLength != 1 {
+		instruction += strconv.Itoa(instructionLength)
+	}
+	opcode = opcode[instructionLength:]
+	return instruction, opcode
+}
+
+func DisassembleProgram(program []byte) {
+	var instruction string
+	for range program {
+		instruction, program = translateInstructionToString(program)
+		fmt.Printf("%s\n", instruction)
+		if len(program) == 0 {
+			break
+		}
+	}
+}
+
 func (m *Machine) LoadToMemory(program []byte) {
 	copy(m.Memory[:], program)
 }
@@ -59,9 +102,28 @@ func (m *Machine) Step() bool {
 }
 
 func (m *Machine) debug() {
+	var next string
 	for {
-		fmt.Printf("A: %-3d (0x%-3x) | B: %-3d (0x%-3x) | PC: %-3d", m.A, m.A, m.B, m.B, m.PC)
-		m.Step()
+		switch m.Memory[m.PC] {
+		case OpHALT:
+			next = "halt"
+		case OpINCA:
+			next = "inc a"
+		case OpDECA:
+			next = "dec a"
+		case OpLDA:
+			next = fmt.Sprintf("ld a, %d", m.Memory[m.PC+1])
+		case OpINCB:
+			next = "inc b"
+		case OpDECB:
+			next = "dec b"
+		case OpLDB:
+			next = fmt.Sprintf("ld b, %d", m.Memory[m.PC+1])
+		}
+		fmt.Printf("A: %-3d (0x%-3x) | B: %-3d (0x%-3x) | PC: %-3d | Next instruction: %s", m.A, m.A, m.B, m.B, m.PC, next)
+		if m.Step() {
+			fmt.Println("\nHalted")
+		}
 		reader := bufio.NewReader(os.Stdin)
 		reader.ReadString('\n')
 	}
@@ -109,5 +171,4 @@ func New() Machine {
 	return m
 }
 
-// TODO: read binary file and execute it step by step
-// print out the values of the registries, user should press enter after each and then execute next instruction
+// TODO: Write assembly code and produce a binary file. Without operands in the beginning. It should take assembly file as input and produce the binary.

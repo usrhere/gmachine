@@ -14,5 +14,4 @@ func New() *CPU {
 
 func (cpu *CPU) Step() {
 	// Over to you to implement `Step`!
-	cpu.PC = 1
 }

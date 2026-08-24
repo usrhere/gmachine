@@ -19,7 +19,7 @@ func TestNewInitialisesCPU(t *testing.T) {
 }
 
 // Uncomment this test once the previous test passes!
-// func TestNop(t *testing.T) {
+// func TestNopInstructionIncrementsPC(t *testing.T) {
 // 	t.Parallel()
 // 	cpu := r8.New()
 // 	cpu.Memory[0] = r8.OpNOP

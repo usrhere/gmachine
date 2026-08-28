@@ -37,40 +37,46 @@ func instructionLength(opcode byte) int {
 	return 1
 }
 
-func translateInstructionToString(opcode []byte) (string, []byte) {
-	var instruction string
-	switch opcode[0] {
+func translateObjectToSource(objects []byte) (string, []byte) {
+	var source string
+	switch objects[0] {
 	case OpHALT:
-		instruction = "halt"
+		source = "halt"
 	case OpINCA:
-		instruction = "inc a"
+		source = "inc a"
 	case OpDECA:
-		instruction = "dec a"
+		source = "dec a"
 	case OpLDA:
-		instruction = "ld a"
+		source = "lda"
 	case OpINCB:
-		instruction = "inc b"
+		source = "inc b"
 	case OpDECB:
-		instruction = "dec b"
+		source = "dec b"
 	case OpLDB:
+		source = "ldb"
 	}
-	instructionLength := instructionLength(opcode[0])
+	instructionLength := instructionLength(objects[0])
 	if instructionLength != 1 {
-		instruction += strconv.Itoa(instructionLength)
+		source += fmt.Sprintf(" %d", objects[1])
 	}
-	opcode = opcode[instructionLength:]
-	return instruction, opcode
+	fmt.Println(source, ", len: ", instructionLength)
+	objects = objects[instructionLength:]
+	return source, objects
 }
 
-func DisassembleProgram(program []byte) {
+func DisassembleProgram(objects []byte) []byte {
+	var source []byte
 	var instruction string
-	for range program {
-		instruction, program = translateInstructionToString(program)
-		fmt.Printf("%s\n", instruction)
-		if len(program) == 0 {
+	for range objects {
+		instruction, objects = translateObjectToSource(objects)
+		source = append(source, []byte(instruction)...)
+		source = append(source, []byte("\n")...)
+		//	fmt.Printf("Instruction: %s\n", instruction)
+		if len(objects) == 0 {
 			break
 		}
 	}
+	return source
 }
 
 func (m *Machine) LoadToMemory(program []byte) {
@@ -171,4 +177,40 @@ func New() Machine {
 	return m
 }
 
-// TODO: Write assembly code and produce a binary file. Without operands in the beginning. It should take assembly file as input and produce the binary.
+func Assemble(f []byte) []byte {
+	var objects []byte
+	opcodes := strings.Split(string(f), "\n")
+	for i := 0; i < len(opcodes); i++ {
+		fmt.Println(opcodes[i])
+		switch {
+		case opcodes[i] == "halt":
+			objects = append(objects, OpHALT)
+		case opcodes[i] == "inc a":
+			objects = append(objects, OpINCA)
+		case opcodes[i] == "dec a":
+			objects = append(objects, OpDECA)
+		case strings.HasPrefix(opcodes[i], "lda "):
+			objects = append(objects, OpLDA)
+			number, err := strconv.Atoi(strings.Split(opcodes[i], " ")[1])
+			if err != nil {
+				panic(err)
+			}
+			objects = append(objects, byte(number))
+		case opcodes[i] == "inc b":
+			objects = append(objects, OpINCB)
+		case opcodes[i] == "dec b":
+			objects = append(objects, OpDECB)
+		case strings.HasPrefix(opcodes[i], "ldb "):
+			objects = append(objects, OpLDB)
+			number, err := strconv.Atoi(strings.Split(opcodes[i], " ")[1])
+			if err != nil {
+				panic(err)
+			}
+			objects = append(objects, byte(number))
+		}
+	}
+	fmt.Println(objects)
+	return objects
+}
+
+// TODO: show content of the memory, user provides the address of the memory, like https://github.com/bitfield/rx82#using-the-monitor

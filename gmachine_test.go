@@ -2,9 +2,12 @@ package gmachine_test
 
 import (
 	"os"
+	"slices"
 	"testing"
 
 	"gmachine"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNew(t *testing.T) {
@@ -157,5 +160,24 @@ func TestPCIsIncrementedForEachInstruction(t *testing.T) {
 	wantPC := 1
 	if m.PC != uint16(wantPC) {
 		t.Errorf("want PC == %d, got %d", wantPC, m.PC)
+	}
+}
+
+func TestAssemblerAndDisassemblerAreConsistent(t *testing.T) {
+	assembly := `lda 50
+inc a
+inc a
+dec a
+ldb 100
+dec b
+dec b
+inc b
+halt
+`
+	objects := gmachine.Assemble([]byte(assembly))
+	source := gmachine.DisassembleProgram(objects)
+	if !slices.Equal([]byte(assembly), source) {
+		t.Errorf("slices are not equal, want %v , got %s", assembly, source)
+		t.Error(cmp.Diff(assembly, string(source)))
 	}
 }

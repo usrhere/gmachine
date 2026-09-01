@@ -13,6 +13,7 @@ func main() {
 	file := flag.String("f", "", "file to process")
 	interactive := flag.Bool("i", false, "enable interactive mode")
 	disassemble := flag.Bool("s", false, "disassemble given file")
+	monitor := flag.Bool("m", false, "run in monitoring mode")
 	flag.Parse()
 	if *file != "" {
 		f, err = os.ReadFile(*file)
@@ -30,6 +31,9 @@ func main() {
 	}
 	if *interactive {
 		m.Interactive = true
+	}
+	if *monitor {
+		m.Monitor = true
 	}
 	m.RunProgram(f)
 }

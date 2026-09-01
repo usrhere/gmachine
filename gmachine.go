@@ -28,6 +28,7 @@ type Machine struct {
 	Memory      [65536]byte
 	Debug       bool
 	Interactive bool
+	Monitor     bool
 }
 
 func instructionLength(opcode byte) int {
@@ -59,7 +60,6 @@ func translateObjectToSource(objects []byte) (string, []byte) {
 	if instructionLength != 1 {
 		source += fmt.Sprintf(" %d", objects[1])
 	}
-	fmt.Println(source, ", len: ", instructionLength)
 	objects = objects[instructionLength:]
 	return source, objects
 }
@@ -71,7 +71,6 @@ func DisassembleProgram(objects []byte) []byte {
 		instruction, objects = translateObjectToSource(objects)
 		source = append(source, []byte(instruction)...)
 		source = append(source, []byte("\n")...)
-		//	fmt.Printf("Instruction: %s\n", instruction)
 		if len(objects) == 0 {
 			break
 		}
@@ -134,10 +133,24 @@ func (m *Machine) debug() {
 		reader.ReadString('\n')
 	}
 }
+func (m *Machine) monitor() {
+	var address uint16
+	fmt.Println("Memory dump")
+	fmt.Print("Enter address (or press enter to start from 0): ")
+	fmt.Scanln(&address)
+	for i := address; int(i)+16 < len(m.Memory); i += 16 {
+		fmt.Printf("%04X: % x", i, m.Memory[i:i+16])
+		reader := bufio.NewReader(os.Stdin)
+		reader.ReadString('\n')
+	}
+
+}
 
 func (m *Machine) Run() {
 	if m.Debug {
 		m.debug()
+	} else if m.Monitor {
+		m.monitor()
 	} else if m.Interactive {
 		var input []byte
 		fmt.Printf("Enter Op codes in hex: ")
@@ -181,7 +194,6 @@ func Assemble(f []byte) []byte {
 	var objects []byte
 	opcodes := strings.Split(string(f), "\n")
 	for i := 0; i < len(opcodes); i++ {
-		fmt.Println(opcodes[i])
 		switch {
 		case opcodes[i] == "halt":
 			objects = append(objects, OpHALT)
@@ -209,7 +221,7 @@ func Assemble(f []byte) []byte {
 			objects = append(objects, byte(number))
 		}
 	}
-	fmt.Println(objects)
+	// fmt.Println(objects)
 	return objects
 }
 

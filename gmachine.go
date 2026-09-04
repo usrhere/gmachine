@@ -19,6 +19,7 @@ const (
 	OpINCB         = 0x31
 	OpDECB         = 0x41
 	OpLDB          = 0x11
+	OpJMP          = 0xf7
 )
 
 type Machine struct {
@@ -29,13 +30,21 @@ type Machine struct {
 	Debug       bool
 	Interactive bool
 	Monitor     bool
+	Assemble    bool
 }
 
 func instructionLength(opcode byte) int {
-	if opcode == OpLDA || opcode == OpLDB {
+	switch opcode {
+	case OpLDA, OpLDB:
 		return 2
+	case OpJMP:
+		return 3
+	default:
+		return 1
 	}
-	return 1
+}
+func convertLEBytesToUint16(low, high byte) uint16 {
+	return uint16(high)*256 + uint16(low)
 }
 
 func translateObjectToSource(objects []byte) (string, []byte) {
@@ -55,10 +64,15 @@ func translateObjectToSource(objects []byte) (string, []byte) {
 		source = "dec b"
 	case OpLDB:
 		source = "ldb"
+	case OpJMP:
+		source = "jmp"
 	}
 	instructionLength := instructionLength(objects[0])
-	if instructionLength != 1 {
+	switch instructionLength {
+	case 2:
 		source += fmt.Sprintf(" %d", objects[1])
+	case 3:
+		source += fmt.Sprintf(" %d", convertLEBytesToUint16(objects[1], objects[2]))
 	}
 	objects = objects[instructionLength:]
 	return source, objects
@@ -101,6 +115,11 @@ func (m *Machine) Step() bool {
 	case OpLDB:
 		m.B = m.Memory[m.PC+1]
 		m.PC++
+	case OpJMP:
+		low := m.Memory[m.PC+1]
+		high := m.Memory[m.PC+2]
+		m.PC = uint16(high)*256 + uint16(low)
+		return false
 	}
 	m.PC++
 	return false
@@ -124,6 +143,8 @@ func (m *Machine) debug() {
 			next = "dec b"
 		case OpLDB:
 			next = fmt.Sprintf("ld b, %d", m.Memory[m.PC+1])
+		case OpJMP:
+			next = fmt.Sprintf("jmp, %d", uint16(m.Memory[m.PC+1])+uint16(m.Memory[m.PC+2])*256)
 		}
 		fmt.Printf("A: %-3d (0x%-3x) | B: %-3d (0x%-3x) | PC: %-3d | Next instruction: %s", m.A, m.A, m.B, m.B, m.PC, next)
 		if m.Step() {
@@ -151,6 +172,8 @@ func (m *Machine) Run() {
 		m.debug()
 	} else if m.Monitor {
 		m.monitor()
+	} else if m.Assemble {
+		Assemble(m.Memory[:])
 	} else if m.Interactive {
 		var input []byte
 		fmt.Printf("Enter Op codes in hex: ")
@@ -219,10 +242,19 @@ func Assemble(f []byte) []byte {
 				panic(err)
 			}
 			objects = append(objects, byte(number))
+		case strings.HasPrefix(opcodes[i], "jmp "):
+			objects = append(objects, OpJMP)
+			number, err := strconv.Atoi(strings.Split(opcodes[i], " ")[1])
+			if err != nil {
+				panic(err)
+			}
+			high := number / 256
+			low := number % 256
+			objects = append(objects, byte(low), byte(high))
 		}
 	}
 	// fmt.Println(objects)
 	return objects
 }
 
-// TODO: show content of the memory, user provides the address of the memory, like https://github.com/bitfield/rx82#using-the-monitor
+// TODO: try to write conditional loop

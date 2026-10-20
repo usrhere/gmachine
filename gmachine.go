@@ -146,11 +146,11 @@ func (m *Machine) debug() {
 		case OpJMP:
 			next = fmt.Sprintf("jmp, %d", uint16(m.Memory[m.PC+1])+uint16(m.Memory[m.PC+2])*256)
 		}
-		fmt.Printf("A: %-3d (0x%-3x) | B: %-3d (0x%-3x) | PC: %-3d | Next instruction: %s", m.A, m.A, m.B, m.B, m.PC, next)
+		fmt.Printf("A: %-3d (0x%-3x) | B: %-3d (0x%-3x) | PC: %-3d | Next instruction: %s\n", m.A, m.A, m.B, m.B, m.PC, next)
 		if m.Step() {
-			fmt.Println("\nHalted")
+			fmt.Println("Halted")
 		}
-		fmt.Print("\n>")
+		fmt.Print(">")
 		command := bufio.NewScanner(os.Stdin)
 		if command.Scan() {
 			//fmt.Printf("Scanner: %s", command.Text())
@@ -164,12 +164,10 @@ func (m *Machine) debug() {
 				if err != nil {
 					panic(err)
 				}
-				for i := address; int(i)+16 < len(m.Memory); i += 16 {
-					fmt.Printf("%04X: % x", i, m.Memory[i:i+16])
-					reader := bufio.NewReader(os.Stdin)
-					reader.ReadString('\n')
-				}
-			case "":
+				fmt.Printf("%04X: % x", address, m.Memory[address:address+16])
+				fmt.Print("\n>")
+				reader := bufio.NewReader(os.Stdin)
+				reader.ReadString('\n')
 			}
 		}
 		//switch command {

@@ -153,7 +153,6 @@ func (m *Machine) debug() {
 		fmt.Print(">")
 		command := bufio.NewScanner(os.Stdin)
 		if command.Scan() {
-			//fmt.Printf("Scanner: %s", command.Text())
 			commandParts := strings.Fields(command.Text())
 			if len(commandParts) < 1 {
 				continue
@@ -170,13 +169,6 @@ func (m *Machine) debug() {
 				reader.ReadString('\n')
 			}
 		}
-		//switch command {
-		//case "M":
-		//	// Logic here
-		//case "":
-		//}
-		//reader := bufio.NewReader(os.Stdin)
-		//reader.ReadString('\n')
 	}
 }
 func (m *Machine) monitor() {
@@ -278,11 +270,10 @@ func Assemble(f []byte) []byte {
 			objects = append(objects, byte(low), byte(high))
 		}
 	}
-	// fmt.Println(objects)
 	return objects
 }
 
-// TODO: It should return to single-stepping after printing memory at requested address
+// DONE: It should return to single-stepping after printing memory at requested address
 // TODO: Implement asm & dis like in rust implementation
 // TODO: try to write conditional loop??
 

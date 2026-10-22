@@ -92,8 +92,8 @@ func DisassembleProgram(objects []byte) []byte {
 	return source
 }
 
-func (m *Machine) LoadToMemory(program []byte) {
-	copy(m.Memory[:], program)
+func (m *Machine) LoadToMemory(program []byte, address int) {
+	copy(m.Memory[address:], program)
 }
 
 func (m *Machine) Step() bool {
@@ -146,15 +146,18 @@ func (m *Machine) debug() {
 		case OpJMP:
 			next = fmt.Sprintf("jmp, %d", uint16(m.Memory[m.PC+1])+uint16(m.Memory[m.PC+2])*256)
 		}
-		fmt.Printf("A: %-3d (0x%-3x) | B: %-3d (0x%-3x) | PC: %-3d | Next instruction: %s\n", m.A, m.A, m.B, m.B, m.PC, next)
-		if m.Step() {
-			fmt.Println("Halted")
-		}
+		fmt.Printf("A: %-3d (0x%-3x) | B: %-3d (0x%-3x) | PC: %-3d\nNext instruction: %s\n", m.A, m.A, m.B, m.B, m.PC, next)
+		//if m.Step() {
+		//	fmt.Println("Halted")
+		//}
 		fmt.Print(">")
 		command := bufio.NewScanner(os.Stdin)
 		if command.Scan() {
 			commandParts := strings.Fields(command.Text())
 			if len(commandParts) < 1 {
+				if m.Step()	{
+					fmt.Println("Halted")
+				}
 				continue
 			}
 			switch commandParts[0] {
@@ -164,9 +167,27 @@ func (m *Machine) debug() {
 					panic(err)
 				}
 				fmt.Printf("%04X: % x", address, m.Memory[address:address+16])
-				fmt.Print("\n>")
-				reader := bufio.NewReader(os.Stdin)
-				reader.ReadString('\n')
+				continue
+			case "E":
+				address, err := strconv.Atoi(commandParts[1])
+				if err != nil {
+					panic(err)
+				}
+				fmt.Printf("Enter Op codes in hex: ")
+				var input []byte
+				if command.Scan() {
+					fields := strings.Fields(command.Text())
+					for _, field := range fields {
+						b, err := strconv.ParseUint(field, 0, 8)
+						if err != nil {
+							panic(err)
+						}
+						fmt.Printf("%d (%s)\n", b, field)
+						input = append(input, byte(b))
+					}
+				}
+				m.LoadToMemory(input,address)
+				m.debug()
 			}
 		}
 	}
@@ -183,7 +204,7 @@ func (m *Machine) monitor() {
 	}
 
 }
-
+// TODO: remove what is no longer needed from here.
 func (m *Machine) Run() {
 	if m.Debug {
 		m.debug()
@@ -206,7 +227,7 @@ func (m *Machine) Run() {
 				input = append(input, byte(b))
 			}
 		}
-		m.LoadToMemory(input)
+		m.LoadToMemory(input, 0)
 		m.debug()
 	} else {
 		for {
@@ -219,7 +240,7 @@ func (m *Machine) Run() {
 }
 
 func (m *Machine) RunProgram(program []byte) {
-	m.LoadToMemory(program)
+	m.LoadToMemory(program, 0)
 	m.Run()
 }
 

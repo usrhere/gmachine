@@ -65,5 +65,27 @@ func main() {
 			panic(err)
 		}
 		m.RunProgram(data)
+	case "dis":
+		if len(os.Args) < 3 {
+			fmt.Println("mon help")
+		}
+		data, err := os.ReadFile(os.Args[2])
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%s", gmachine.DisassembleProgram(data))
+	case "ass":
+		if len(os.Args) < 3 {
+			fmt.Println("mon help")
+		}
+		data, err := os.ReadFile(os.Args[2])
+		if err != nil {
+			panic(err)
+		}
+		objects := gmachine.Assemble(data)
+		err = os.WriteFile("output.bin", objects, 0o0600)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
